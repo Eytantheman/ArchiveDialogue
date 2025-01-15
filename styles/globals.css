@@ -1,0 +1,33 @@
+.scroll-container {
+  direction: rtl; /* This moves the scrollbar to the left */
+  scrollbar-width: thin;
+  scrollbar-color: #4B5563 transparent;
+}
+
+.scroll-content {
+  direction: ltr; /* Keep the content left-to-right */
+}
+
+.scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background-color: #4B5563;
+  border-radius: 20px;
+  border: transparent;
+}
+
+/* Hide scrollbar when not hovering */
+.scroll-container:not(:hover)::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* Show scrollbar on hover */
+.scroll-container:hover::-webkit-scrollbar-thumb {
+  background-color: #4B5563;
+}
