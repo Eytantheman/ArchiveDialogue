@@ -1,25 +1,23 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
 
-function ChatMessage({ author, content, isComplete }) {
+// 1. ChatMessage component
+function ChatMessage({ author, content, isComplete, isUser }) {
   const getAvatarColor = (name) => {
     const colors = {
-      'Tafuri': 'bg-blue-500',
-      'Denis': 'bg-green-500', 
-      'Piranesi': 'bg-purple-500'
+      'Archivist': 'bg-blue-500',
+      'Historian': 'bg-green-500', 
+      'Geographer': 'bg-purple-500'
     };
     return colors[name] || 'bg-gray-500';
   };
 
   return (
     <div className="flex items-start space-x-3 mb-6">
-      <div className={`w-10 h-10 rounded-full ${getAvatarColor(author)} flex items-center justify-center text-white font-bold text-lg`}>
-        {author[0]}
-      </div>
       <div className="flex-1">
-        <div className="text-gray-300 font-semibold text-lg font-helvetica mb-1">{author}</div>
-        <div className="bg-gray-800 rounded-lg p-4 mt-1">
-          <p className="whitespace-pre-wrap text-gray-100 text-lg font-helvetica leading-relaxed">
+        <div className="text-gray-300 font-semibold text-xl font-helvetica mb-1 uppercase">{author}</div>
+        <div className={`rounded-lg p-4 mt-1 ${isUser ? 'bg-gray-200' : 'bg-gray-800'}`}>
+          <p className={`whitespace-pre-wrap text-lg leading-relaxed ${isUser ? 'text-black font-helvetica' : 'text-gray-100 font-serif'}`}>
             {content}
             {!isComplete && (
               <span className="inline-block w-1 h-5 ml-1 bg-gray-300 animate-pulse" />
@@ -31,55 +29,114 @@ function ChatMessage({ author, content, isComplete }) {
   );
 }
 
+// 2. ChatInterface component
+// Manages the chat interface, handles audio playback, and renders the chat messages
 function ChatInterface() {
+  // State variables
   const [messages, setMessages] = useState([]);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(-1);
   const [currentText, setCurrentText] = useState('');
   const [charIndex, setCharIndex] = useState(0);
   const [audioDuration, setAudioDuration] = useState(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [currentImage, setCurrentImage] = useState('/dorn-manifesto.jpg');
+  // Ref variables
   const chatContainerRef = useRef(null);
   const timeoutRef = useRef(null);
   const audioRef = useRef(null);
 
+  // Conversation data
   const conversation = [
     {
-      id: "Tafuri_1",
-      author: "Tafuri",
-      content: "This image lays bare the infrastructure of myth. These timber piles are the unspoken truth of Venice, a city celebrated for its beauty while concealing the labor and pragmatism that sustain it. What fascinates me is their dialectical nature—they embody both triumph and vulnerability. Their very existence is a reminder of the impossibility of separating architecture from the economic and social realities that produced it. Yet, is this act of constructing stability on unstable ground not an expression of hubris, a prelude to ruin? What happens when the labor required to sustain this vision becomes too much to bear?"
+      id: "Archivist_1",
+      author: "Archivist",
+      content: "This is the 'Doorn Manifesto,' a typed manuscript by Alison and Peter Smithson prepared for CIAM 10. The document measures 253 × 205 mm, with black typeface and extensive graphite annotations. What's particularly notable is the bottom section containing valley-section diagrams that explicitly reference Patrick Geddes' work, though with significant simplification. The marginalia suggests multiple revision sessions, with at least three different handwriting styles visible. The document's condition indicates it is a working paper rather than being a presentation copy."
     },
     {
-      id: "Denis_1",
-      author: "Denis",
-      content: "Tafuri, must you always frame such ingenuity in terms of ruin? To me, this image is a celebration of architecture's capacity to adapt. The timber piles do not defy nature—they collaborate with it. Submerged in water, they transform a limitation into a strength, resisting decay through the very conditions that threaten them. This is resilience, not hubris. Look at the harmony here: human ingenuity working hand-in-hand with the environment. And yet, I wonder, does this harmony point to a larger truth about architecture—one where fragility and strength are not opposites but partners in survival?"
+      id: "Archivist_1_Q",
+      author: "Archivist",
+      content: "What else do you see here?"
     },
     {
-      id: "Piranesi_1", 
-      author: "Piranesi",
-      content: "Resilience, harmony—such contemporary indulgences! I see in these piles a battle, a visceral struggle against the forces of nature, much like the monumental endeavors of my beloved Rome. But where Rome asserted permanence in stone, Venice dares to build its foundations on timber, on a material destined to decay. Is this not a kind of paradoxical heroism? These piles, fragile as they are, hold up a city that claims eternity. And yet, Denis, does their very fragility not heighten their triumph? Is it not the fleetingness of this endeavor that makes it sublime? Tell me, what stories will these timber piles inspire in a thousand years, when the city they hold may be no more?"
+      id: "User_1",
+      author: "User",
+      content: "I see a document with some notes, and a diagram with a sketch of different types of buildings.",
+      typing: true
     },
     {
-      id: "Tafuri_2",
-      author: "Tafuri", 
-      content: "Piranesi, you revel in the drama of decay, but let us not ignore the systems of power at play here. These piles do not simply support a city—they support an ideology, a vision of Venice as a miraculous exception to the natural order. This act of foundation is as political as it is architectural. It asserts control over nature, a statement that Venice is not merely a city, but an empire. Yet, can we separate the aesthetic glory of this vision from the exploitation and labor that underpin it? Or are we, too, complicit in romanticizing its fragility?"
+      id: "Historian_1",
+      author: "Historian", 
+      content: "But what does it mean? This manifesto represents more than just an ideological shift—it's a fundamental crisis in modernist thinking. The Smithsons are essentially declaring the bankruptcy of CIAM's entire methodological framework while paradoxically using its tools. Their rejection of the Athens Charter isn't merely a critique; it's an admission of modernism's failure to create meaningful human environments. It's ironic they're using a manifesto—the most modernist of formats—to declare the death of modernist planning principles.\nTheir emphasis on 'habitat' isn't just a new lens—it's a confession that Le Corbusier's 'machine for living' has produced mechanical environments devoid of human warmth."
     },
     {
-      id: "Denis_2",
-      author: "Denis",
-      content: "Perhaps we are complicit, Tafuri, but is that not the role of architecture—to provoke, to inspire, even to deceive? These piles are not just foundations; they are metaphors, symbols of a city that thrives on reinvention. Venice survives not despite its fragility, but because of it. What other city could transform such precariousness into a spectacle? And yet, I am left wondering: if architecture thrives on reinvention, what reinventions might these piles still witness? What futures could emerge from such ancient roots?"  
+      id: "Geographer_1",
+      author: "Geographer",
+      content: "Let's be honest about what's showing in this document. The Smithsons' valley section diagram isn't just simplified—it's dangerously reductive. They're trying to map complex social relationships onto physical space as if human communities can be understood through topographical sections.\nThe tension is between the reality of how cities actually function and the persistent fantasy that we can somehow plan our way to better communities."
     },
     {
-      id: "Piranesi_2",
-      author: "Piranesi",
-      content: "Ancient roots, yes—roots sunk deep in water, the most capricious of elements. But Denis, does this spectacle not also contain a warning? The Romans built for eternity, and even their ruins inspire awe. Venice builds for the moment, and while it dazzles, it also trembles. These piles—mute, submerged, forgotten—are they not the true architecture of the city? And so I ask: does the glory of Venice lie in its surfaces, or in these hidden, decaying foundations? What will endure, and what will vanish beneath the waves?"
+      id: "User_2",
+      author: "Geographer",
+      content: "What do you think about this proposal?",
+      typing: true
+    },
+    {
+      id: "Archivist_2",
+      author: "Archivist",
+      content: "It's interesting that the document shows multiple revision phases. The paper stock is consistent with other CIAM documents from this period, suggesting it was part of a larger collection of working papers. The creases indicate regular handling during working sessions."
+    },
+    {
+      id: "Historian_2",
+      author: "Historian",
+      content: "But the document's physical attributes matter less than its role in marking the death of a certain kind of architectural thinking."
+    },
+    {
+      id: "Archivist_3",
+      author: "Archivist",
+      content: "This manifesto raises foundational questions about habitat, relationships, and community. To extend this conversation, I propose examining the Kennemerland Residential Construction Model from the same period. It is a physical representation of these ideas, visualizing a planned community within a polder landscape. The model presents high-rise buildings, multi-story housing, and single-family homes, organized around central amenities like schools and shops. It was showcased at the CIAM Otterlo congress in 1959, connecting the theoretical ambitions of documents like the Doorn Manifesto to tangible, constructed forms of habitat."
+    },
+    {
+      id: "Archivist_3_Q",
+      author: "User",
+      content: "What else do you see here?",
+      typing: true
+    },
+    {
+      id: "User_3",
+      author: "User",
+      content: "I see a colorful model, that reminds me of a children's game. It looks very serene and nice",
+      typing: true
+    },
+    {
+      id: "Historian_3",
+      author: "Historian",
+      content: "The Kennemerland model could be seen as a direct response to the manifesto's call for 'habitat'—a layered system of relationships between architecture, community, and landscape. These neatly arranged housing types, centralized facilities, and rectilinear layouts speak of efficiency and control, yet one wonders: Where is the individual in this habitat?"
+    },
+    {
+      id: "Geographer_2",
+      author: "Geographer",
+      content: "This model, when placed within a polder - the ultimate abstraction of nature, terraformed into a blank slate for human settlement. Yet, this blankness is an illusion. The reclaimed land requires constant maintenance—pumps, dikes, and canals—to remain viable. How does this fragile, artificial landscape shape the community that inhabits it?"
+    },
+    {
+      id: "Archivist_4",
+      author: "Archivist",
+      content: "These are important questions, and perhaps the model can help us find some answers—or at least better articulate the challenges. The Kennemerland model is not just an artifact of design but a tool for imagining a new kind of habitat, one that grapples with the interaction of architecture, community, and the transformed landscape of the polder. Let us examine it together.\nDescribe to me the impression you get from it?"
+    },
+    {
+      id: "Archivist_4_Q",
+      author: "Archivist",
+      content: "Describe to me - what is the impression you get from it?"
     }
   ];
 
+  // 3. handleStart function
+  // Starts the conversation when the "Start Conversation" button is clicked
   const handleStart = () => {
     setHasStarted(true);
     setCurrentMessageIndex(0);
   };
 
+  // 4. playMessageSound function
+  // Plays the audio for the current message
   const playMessageSound = async (author, messageIndex) => {
     const currentMessage = conversation[messageIndex];
     if (!currentMessage.id) return;
@@ -111,6 +168,8 @@ function ChatInterface() {
     }
   };
 
+  // 5. scrollToBottom function
+  // Scrolls the chat container to the bottom
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       const scrollContainer = chatContainerRef.current;
@@ -120,115 +179,163 @@ function ChatInterface() {
       scrollContainer.scrollTop = maxScrollTop > 0 ? maxScrollTop : 0;
     }
   };
-
+  const handleImageTransition = (newImage) => {
+    setCurrentImage(newImage);
+  };
+  // 6. useEffect hook
+  // Handles the typing effect and audio playback
   useEffect(() => {
     if (currentMessageIndex >= conversation.length) return;
     if (currentMessageIndex === -1) return;
-
+  
     const currentMessage = conversation[currentMessageIndex];
-    
+  
     if (charIndex === 0) {
       playMessageSound(currentMessage.author, currentMessageIndex);
     }
-
+  
     if (charIndex >= currentMessage.content.length) {
       timeoutRef.current = setTimeout(() => {
-        setCurrentMessageIndex(prev => prev + 1);
+        setCurrentMessageIndex((prev) => prev + 1);
         setCharIndex(0);
         setCurrentText('');
         setAudioDuration(null);
-      }, 3000);
+      }, currentMessage.typing ? 2000 : 3000);
       return;
     }
-
+  
+    // Trigger image transition when id: "Archivist_3" appears
+    if (currentMessage.id === 'Archivist_3') {
+      handleImageTransition('/kennemerland-model.png'); // Replace with the actual image path
+    }
+  
     // TYPING SPEED ADJUSTMENT SECTION
     let delay;
-    const messageLength = currentMessage.content.length;
-
-    if (audioDuration) {
+    const speedMultiplier = 0.2; // Global speed control: lower = faster
+    const variationFactor = 0.6; // Increase this for more pronounced speed variations
+  
+    if (currentMessage.typing) {
+      // User typing effect with slower speed and random variations
+      delay = 120 * (0.8 + Math.random() * variationFactor);
+    } else if (audioDuration) {
       // Calculate the base delay to match typing duration with audio duration
-      const baseDelay = audioDuration / messageLength;
-
-      // Add slight randomality to the delay (between 0.8 and 1.2 times the base delay)
-      const randomFactor = 0.8 + Math.random() * 0.5;
+      const baseDelay = audioDuration / currentMessage.content.length;
+  
+      // Add larger randomality to the delay (between 0.5 and 1.5 times the base delay)
+      const randomFactor = 0.5 + Math.random() * variationFactor;
       delay = baseDelay * randomFactor;
+  
+      // Add longer pauses for punctuation
+      const char = currentMessage.content[charIndex];
+      if (['.', '!', '?'].includes(char)) {
+        delay *= 2;
+      } else if ([',', '—'].includes(char)) {
+        delay *= 1.5;
+      }
+  
+      // More frequent and larger random pauses
+      if (Math.random() < 0.05) {
+        delay *= 2.5;
+      }
     } else {
-      // Default typing speed if no audio (with slight randomality)
-      delay = 30 * (0.8 + Math.random() * 0.4);
+      // Default typing speed if no audio (with larger variations)
+      delay = 30 * (0.5 + Math.random() * variationFactor);
+  
+      // Add pauses for punctuation
+      const char = currentMessage.content[charIndex];
+      if (['.', '!', '?'].includes(char)) {
+        delay *= 2;
+      } else if ([',', '—'].includes(char)) {
+        delay *= 1.5;
+      }
+  
+      // Random pauses
+      if (Math.random() < 0.05) {
+        delay *= 2.5;
+      }
     }
-
+  
     timeoutRef.current = setTimeout(() => {
-      setCurrentText(prev => prev + currentMessage.content[charIndex]);
-      setCharIndex(prev => prev + 1);
+      setCurrentText((prev) => prev + currentMessage.content[charIndex]);
+      setCharIndex((prev) => prev + 1);
       scrollToBottom();
     }, delay);
-
+  
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
   }, [currentMessageIndex, charIndex, conversation, audioDuration]);
+  // 7. getCurrentMessages function
+const getCurrentMessages = () => {
+  if (currentMessageIndex === -1) return [];
+  
+  const completeMessages = conversation.slice(0, currentMessageIndex).map(msg => ({
+    ...msg,
+    isComplete: true,
+    isUser: msg.author === 'User'
+  }));
 
-  const getCurrentMessages = () => {
-    if (currentMessageIndex === -1) return [];
-    
-    const completeMessages = conversation.slice(0, currentMessageIndex).map(msg => ({
-      ...msg,
-      isComplete: true
-    }));
+  if (currentMessageIndex < conversation.length) {
+    return [
+      ...completeMessages,
+      {
+        author: conversation[currentMessageIndex].author,
+        content: currentText,
+        isComplete: false,
+        isUser: conversation[currentMessageIndex].author === 'User'
+      }
+    ];
+  }
 
-    if (currentMessageIndex < conversation.length) {
-      return [
-        ...completeMessages,
-        {
-          author: conversation[currentMessageIndex].author,
-          content: currentText,
-          isComplete: false
-        }
-      ];
-    }
-
-    return completeMessages;
-  };
-
-  return (
-    <div className="flex h-screen bg-black">
-      <div className="w-1/2 bg-black relative">
-        <img 
-          src="/Venice-timber-piles.png"
-          alt="Venice timber piles historical photograph"
-          className="absolute inset-0 w-full h-full object-cover opacity-90"
+  return completeMessages;
+};
+ // 8. JSX
+return (
+  <div className="flex h-screen bg-black">
+    <div className="w-1/2 bg-black relative">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <img
+          src={currentImage}
+          alt="Conversation image"
+          className="absolute inset-0 w-full h-full object-contain opacity-90 transition-opacity duration-1000 ease-in-out"
+          style={{ opacity: hasStarted ? 1 : 0 }}
         />
-        <div className="absolute inset-0 bg-black bg-opacity-20"></div>
-        {!hasStarted && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <button
-              onClick={handleStart}
-              className="px-8 py-4 bg-gray-800 text-white rounded-lg text-xl hover:bg-gray-700 transition-colors font-helvetica"
-            >
-              Start Conversation
-            </button>
-          </div>
-        )}
       </div>
-      <div 
-        ref={chatContainerRef}
-        className="w-1/2 bg-black p-8 overflow-y-auto scroll-smooth"
-      >
-        <div className="max-w-2xl mx-auto">
-          {getCurrentMessages().map((msg, idx) => (
-            <ChatMessage 
-              key={idx}
-              author={msg.author}
-              content={msg.content}
-              isComplete={msg.isComplete}
-            />
-          ))}
+      <div className="absolute inset-0 bg-black bg-opacity-20"></div>
+      {!hasStarted && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <p className="text-white text-sm mb-4 text-center px-8">
+            Explore an intriguing conversation between an Archivist, a Historian, and a Geographer as they delve into the Doorn Manifesto and its implications for architecture and urban planning.
+          </p>
+          <button
+            onClick={handleStart}
+            className="px-8 py-4 bg-gray-800 text-white rounded-lg text-lg hover:bg-gray-700 transition-colors font-courier"
+          >
+            Load Object from Archive
+          </button>
         </div>
+      )}
+    </div>
+    <div 
+      ref={chatContainerRef}
+      className="w-1/2 bg-black p-8 overflow-y-auto scroll-smooth"
+    >
+      <div className="max-w-2xl mx-auto">
+        {getCurrentMessages().map((msg, idx) => (
+          <ChatMessage 
+            key={idx}
+            author={msg.author}
+            content={msg.content}
+            isComplete={msg.isComplete}
+            isUser={msg.isUser}
+          />
+        ))}
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 export default ChatInterface;
